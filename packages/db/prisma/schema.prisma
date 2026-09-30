@@ -1,0 +1,169 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:../../../data/studio.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Client {
+  id         String     @id @default(uuid())
+  name       String
+  industry   String     @default("general")
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  brandKits  BrandKit[]
+  projects   Project[]
+}
+
+model BrandKit {
+  id             String    @id @default(uuid())
+  clientId       String
+  name           String
+  primaryColor   String    @default("#5848D9")
+  secondaryColor String    @default("#181B27")
+  accentColor    String    @default("#8B80F4")
+  fontFamily     String    @default("Inter")
+  logoAssetId    String?
+  contactDetails String?
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projects       Project[]
+}
+
+model Project {
+  id            String         @id @default(uuid())
+  clientId      String?
+  brandKitId    String?
+  title         String
+  status        String         @default("draft")
+  currentStage  String         @default("00_intake")
+  aspectRatio   String         @default("9:16")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  client        Client?        @relation(fields: [clientId], references: [id])
+  brandKit      BrandKit?      @relation(fields: [brandKitId], references: [id])
+  briefs        Brief[]
+  storyboards   Storyboard[]
+  timelines     Timeline[]
+  assets        Asset[]
+  captionTracks CaptionTrack[]
+  stageRuns     StageRun[]
+  renderJobs    RenderJob[]
+}
+
+model Brief {
+  id                    String   @id @default(uuid())
+  projectId             String
+  rawPrompt             String
+  industry              String   @default("general")
+  aspectRatio           String   @default("9:16")
+  targetDurationSeconds Int      @default(30)
+  targetAudience        String?
+  language              String   @default("en-IN")
+  tone                  String   @default("cinematic and premium")
+  ctaText               String?
+  avatarPreference      String   @default("none")
+  captionStyleId        String   @default("bold-stack")
+  verifiedFacts         String   @default("[]")
+  forbiddenClaims       String   @default("[]")
+  createdAt             DateTime @default(now())
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Storyboard {
+  id              String   @id @default(uuid())
+  projectId       String
+  version         Int      @default(1)
+  title           String
+  totalDurationMs Int
+  scenes          Scene[]
+  createdAt       DateTime @default(now())
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Scene {
+  id                 String     @id @default(uuid())
+  storyboardId       String
+  order              Int
+  title              String
+  narrativeGoal      String
+  shotType           String
+  targetDurationMs   Int
+  narrationScript    String     @default("")
+  onScreenText       String?
+  visualDescription  String
+  sourceAssetId      String?
+  captionStyleId     String     @default("bold-stack")
+  motionTemplateId   String?
+  approvalState      String     @default("draft")
+  storyboard         Storyboard @relation(fields: [storyboardId], references: [id], onDelete: Cascade)
+}
+
+model Asset {
+  id             String   @id @default(uuid())
+  projectId      String
+  type           String
+  source         String   @default("user_upload")
+  filename       String
+  filePath       String
+  mimeType       String
+  sizeBytes      Int
+  checksumSha256 String
+  width          Int?
+  height         Int?
+  durationMs     Int?
+  fps            Float?
+  createdAt      DateTime @default(now())
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model CaptionTrack {
+  id             String   @id @default(uuid())
+  projectId      String
+  language       String   @default("en-IN")
+  isPrimary      Boolean  @default(true)
+  wordsJson      String   @default("[]")
+  groupsJson     String   @default("[]")
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Timeline {
+  id          String   @id @default(uuid())
+  projectId   String
+  version     Int      @default(1)
+  aspectRatio String   @default("9:16")
+  width       Int      @default(1080)
+  height      Int      @default(1920)
+  fps         Int      @default(30)
+  durationMs  Int
+  tracksJson  String   @default("[]")
+  createdAt   DateTime @default(now())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model StageRun {
+  id         String    @id @default(uuid())
+  projectId  String
+  stageId    String
+  status     String    @default("pending")
+  costCents  Int       @default(0)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model RenderJob {
+  id              String    @id @default(uuid())
+  projectId       String
+  quality         String    @default("draft_preview")
+  status          String    @default("pending")
+  progressPercent Float     @default(0.0)
+  outputPath      String?
+  errorMessage    String?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}

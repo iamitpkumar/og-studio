@@ -1,0 +1,22 @@
+:root {
+  color-scheme: light;
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-soft: #F8F9FC;
+  --surface-tint: #F3F1FF;
+  --border: #E7E9F0;
+  --border-strong: #D4D8E3;
+  --text: #181B27;
+  --text-muted: #535C6D;
+  --text-subtle: #687386;
+  --accent: #5848D9;
+  --accent-hover: #4738BF;
+  --accent-focus: #8B80F4;
+  --success: #176B4D;
+  --warning: #8A5200;
+  --danger: #B42332;
+  --radius-sm: 10px;
+  --radius-card: 14px;
+  --radius-dialog: 18px;
+  --shadow-popover: 0 8px 32px rgba(20, 24, 45, 0.09);
+}

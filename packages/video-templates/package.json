@@ -1,0 +1,22 @@
+{
+  "name": "@ai-studio/video-templates",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "render:preview": "remotion render src/index.ts VerticalSocial out/preview.mp4"
+  },
+  "dependencies": {
+    "@ai-studio/schemas": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.266"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4.0.525",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.3"
+  }
+}
