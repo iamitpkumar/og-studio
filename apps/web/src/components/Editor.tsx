@@ -4,7 +4,7 @@ import {Plus,Play,Pause,Undo2,Redo2,Upload,Search,Film,Music2,Type,Scissors,Copy
 import {newClip,applyOperations,clipAtFrame,isAudible,parseSubtitles} from '../../../../packages/timeline/src/editor.mjs';
 import type {EditorProject,Clip,Track,MediaAsset,Operation,Transform} from '../../../../packages/timeline/src/editor-types';
 import '../styles/editor.css';
-type Snapshot={project:EditorProject;revision:number;canUndo:boolean;canRedo:boolean;selection:{frame?:number};media:MediaAsset[];history:{number:number;label:string}[];jobs:any[];messages:any[]};
+type Snapshot={project:EditorProject;revision:number;canUndo:boolean;canRedo:boolean;selection:{frame?:number;clipIds?:string[]};media:MediaAsset[];history:{number:number;label:string}[];jobs:any[];messages:any[]};
 const clock=(f:number,fps:number)=>`${String(Math.floor(f/fps/60)).padStart(2,'0')}:${String(Math.floor(f/fps)%60).padStart(2,'0')}:${String(f%fps).padStart(2,'0')}`;
 async function api(path:string,body?:unknown){const r=await fetch('/api/editor/'+path,body===undefined?undefined:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const result=await r.json();if(!r.ok)throw new Error(result.error||'Request failed.');return result;}
 const url=(pid:string,id:string,thumb=false)=>`/api/editor/projects/${pid}/media/${id}${thumb?'?thumbnail=1':''}`;
@@ -14,7 +14,7 @@ export default function Editor(){
   const p=ghost||data?.project,q=p?.sequence,clip=p?.tracks.flatMap(t=>t.clips).find(c=>c.id===selectedId),track=p?.tracks.find(t=>t.clips.some(c=>c.id===selectedId)),asset=data?.media.find(a=>a.id===assetId);
   function accept(next:Snapshot){state.current=next;setData(next);}
   async function list(){const result=await api('projects');setProjects(result);return result;}
-  async function open(id:string){setPlaying(false);setSelectedId('');setAssetId('');setError('');try{const next=await api(`projects/${id}`);accept(next);setTrackId(next.project.tracks[0]?.id||'');setFrame(next.selection.frame||0);localStorage.setItem('motion-editor-project',id);}catch(e:any){setError(e.message);}}
+  async function open(id:string){setPlaying(false);setSelectedId('');setAssetId('');setError('');try{const next=await api(`projects/${id}`);accept(next);setTrackId(next.project.tracks[0]?.id||'');setSelectedId(next.selection.clipIds?.[0]||'');setFrame(next.selection.frame||0);localStorage.setItem('motion-editor-project',id);}catch(e:any){setError(e.message);}}
   useEffect(()=>{list().then(rows=>{const saved=new URLSearchParams(location.search).get('project')||localStorage.getItem('motion-editor-project');if(rows.length)open(rows.find((p:any)=>p.id===saved)?.id||rows[0].id);}).catch(e=>setError(e.message));},[]);
   useEffect(()=>{time.current=frame;},[frame]);
   useEffect(()=>{if(!p)return;const timer=setInterval(async()=>{if(working.current||gesturing.current||document.visibilityState!=='visible')return;try{const next=await api(`projects/${p.id}`);if(!working.current&&!gesturing.current&&state.current?.project.id===next.project.id)accept(next);}catch{}},3500);return()=>clearInterval(timer);},[p?.id]);

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/build.mjs",
-    "test": "node --test tests/studio.test.mjs packages/db/test/db.test.mjs && node --experimental-strip-types --test packages/schemas/test/schemas.test.mjs packages/timeline/test/timeline.test.mjs",
+    "test": "node --test tests/studio.test.mjs tests/editor.test.mjs tests/editor-mcp.test.mjs packages/db/test/db.test.mjs && node --experimental-strip-types --test packages/schemas/test/schemas.test.mjs packages/timeline/test/timeline.test.mjs",
+    "mcp": "node scripts/editor-mcp.mjs",
+    "fixtures": "node scripts/create-editor-fixtures.mjs",
     "test:setup": "node packages/db/node_modules/prisma/build/index.js generate --schema packages/db/prisma/schema.prisma",
     "lint": "node apps/web/node_modules/typescript/bin/tsc --noEmit --project apps/web/tsconfig.json",
     "worker": "node --env-file-if-exists=.env.local scripts/worker.mjs"
@@ -21,6 +23,7 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
     "ffmpeg-static": "5.2.0",
     "ffprobe-static": "3.1.0",
     "gsap": "3.14.2",

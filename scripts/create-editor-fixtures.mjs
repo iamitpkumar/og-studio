@@ -2,7 +2,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import ffmpeg from 'ffmpeg-static';
-const dir=resolve('data/verification/editor-fixtures');await mkdir(dir,{recursive:true});
+const dir=resolve('data/test-runs/editor-acceptance/editor-fixtures');await mkdir(dir,{recursive:true});
 const run=args=>{const result=spawnSync(ffmpeg,['-y','-v','error',...args],{windowsHide:true,encoding:'utf8'});if(result.status!==0)throw new Error(result.stderr);};
 run(['-f','lavfi','-i','testsrc2=size=640x360:rate=30','-f','lavfi','-i','sine=frequency=440:sample_rate=48000','-t','6','-c:v','libx264','-preset','fast','-pix_fmt','yuv420p','-c:a','aac','-movflags','+faststart',join(dir,'01-motion-test.mp4')]);
 run(['-f','lavfi','-i','smptebars=size=640x360:rate=30','-vf','drawbox=x=100:y=80:w=180:h=120:color=white@0.5:t=fill','-t','6','-c:v','libx264','-preset','fast','-pix_fmt','yuv420p','-movflags','+faststart',join(dir,'02-color-test.mp4')]);
