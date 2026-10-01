@@ -34,6 +34,12 @@ Original media hashes, full twenty-second import, source split offsets, byte-ran
 
 All 36 automated checks pass across the existing regressions and eleven production tests. TypeScript and the production build pass. Production tests include real extraction/media ingestion and controlled provider responses, not live paid generation.
 
+## Owner-footage acceptance
+
+The owner subsequently imported `astra.mp4` (94.04 seconds, 1080×1920, audio). Saved revision 46 of project `4b6c0418-b77a-4b75-9e2e-7e7b0a06ddb7` exported job `5788cd4d-f882-431c-a749-2c89ec820339` without changing the timeline. The downloaded MP4 matches the worker checksum and preserved original source hash. It has exactly 2,900 frames at 30 fps, 1080×1920, with 96.667 seconds of video and audible stereo audio (peak 0.8386). Lint reported zero errors/warnings; the full decode passed. The contact sheet was inspected.
+
+The saved sequence includes about 2.63 seconds beyond the footage and custom smaller source framing. These were retained. New explicit **Fit duration to clips** and **Fit layer to canvas** controls make corrections reviewable. This full render took 11m49.7s, primarily browser capture, so rapid-export performance remains a material unfinished requirement. Evidence is under ignored `data/test-runs/production-acceptance/astra-evidence.json`; the local MP4 is `astra-export-v46.mp4`.
+
 ## Outstanding gates
 
 1. Browser gesture, playback/scrubbing and layout acceptance: the computer-use runtime fails to start in this environment. API tests and compilation do not substitute for these checks. Inspect the desktop editor and narrow layouts when browser automation is restored.
