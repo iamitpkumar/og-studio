@@ -7,6 +7,7 @@ import { spawn } from 'node:child_process';
 import ffmpeg from 'ffmpeg-static';
 import ffprobe from 'ffprobe-static';
 import { dirname, delimiter } from 'node:path';
+import { workEditorJob } from './editor-worker.mjs';
 
 async function execute(job) {
   const abort=new AbortController();const timeout=setTimeout(()=>abort.abort(),90000);
@@ -49,4 +50,4 @@ async function execute(job) {
 }
 function run(command,args,signal,cwd){return new Promise((resolve,reject)=>{const child=spawn(command,args,{cwd,windowsHide:true,signal,env:{...process.env,PATH:[dirname(ffmpeg),dirname(ffprobe.path),process.env.PATH].join(delimiter),HYPERFRAMES_EXTRACT_CACHE_DIR:join(dataDir,'frame-cache'),HYPERFRAMES_TELEMETRY_DISABLED:'1'}});let output='',errors='';const timer=setTimeout(()=>child.kill(),20*60*1000);child.stdout.on('data',d=>{output=(output+d).slice(-200000);});child.stderr.on('data',d=>{errors=(errors+d).slice(-3000);});child.on('error',error=>{clearTimeout(timer);reject(error);});child.on('close',code=>{clearTimeout(timer);code===0?resolve(output):reject(new Error(`Media check or render failed (${code}). ${(errors||output).slice(-500)}`));});});}
 console.log('Motion OS worker started. Local jobs only; Ctrl+C to stop.');
-while(true){const job=claimJob();if(job)await execute(job);else await new Promise(r=>setTimeout(r,750));}
+while(true){const job=claimJob();if(job)await execute(job);else if(!await workEditorJob())await new Promise(r=>setTimeout(r,750));}

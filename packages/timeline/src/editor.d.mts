@@ -1,0 +1,13 @@
+import type {EditorProject,Clip,Track,Transform,MediaAsset,Operation} from './editor-types';
+export const trackKinds:string[];
+export const mediaKinds:string[];
+export const defaults:Transform;
+export function emptyProject(name?:string,ratio?:string):EditorProject;
+export function newClip(project:EditorProject,kind:string,asset?:MediaAsset|null,startFrame?:number):Clip;
+export function validateProject(project:unknown):EditorProject;
+export function applyOperations(project:EditorProject,operations:Operation[]):EditorProject;
+export function ease(t:number,type?:string):number;
+export function clipAtFrame(clip:Clip,frame:number):Transform;
+export function isAudible(track:Track,tracks:Track[]):boolean;
+export function parseSubtitles(source:string,fps?:number):{startFrame:number;durationFrames:number;text:string}[];
+export function serializeSubtitles(project:EditorProject):string;
