@@ -1,3 +1,4 @@
+import {captionPresets,titlePresets,transitionPresets,estimatedWords} from './production.mjs';
 // Renderer-neutral, frame-based editing model. No filesystem or provider access.
 export const trackKinds = ['video','image','graphics','text','captions','voiceover','music','sfx'];
 export const mediaKinds = ['video','image','audio'];
@@ -18,7 +19,7 @@ export function emptyProject(name='Untitled film',ratio='16:9') {
 export function newClip(project,kind,asset=null,startFrame=0) {
   const {width,height,fps}=project.sequence;
   const text=kind==='text'||kind==='captions';
-  const durationFrames=asset?.duration?Math.min(Math.floor(asset.duration*fps),fps*10):fps*4;
+  const durationFrames=asset?.duration?Math.max(1,Math.floor(asset.duration*fps)):fps*4;
   return {id:uuid(),kind,name:asset?.name||(kind==='captions'?'Caption':'New title'),assetId:asset?.id||null,startFrame,durationFrames,sourceInFrame:0,
     transform:{x:text?width*.08:0,y:kind==='captions'?height*.78:text?height*.38:0,width:text?width*.84:width,height:text?height*.2:height,rotation:0,opacity:1},
     text:text?'Make something worth watching.':'',textStyle:{fontSize:kind==='captions'?48:Math.round(width*.05),color:'#ffffff',background:kind==='captions'?'#101c20':'#000000',backgroundOpacity:kind==='captions'?.8:0,align:'center',weight:600},
@@ -27,7 +28,7 @@ export function newClip(project,kind,asset=null,startFrame=0) {
 export function validateProject(p) {
   if(!p||p.schemaVersion!==3||!p.sequence||!Array.isArray(p.tracks)||p.tracks.length>24||!Array.isArray(p.assetIds)||p.assetIds.length>500)error('Invalid editor project.');
   identifier(p.id);string(p.name,120,'project name');p.assetIds.forEach(identifier);
-  const q=p.sequence;number(q.width,256,3840,'width',true);number(q.height,256,3840,'height',true);if(![24,25,30,60].includes(q.fps))error('Unsupported frame rate.');number(q.durationFrames,1,q.fps*3600,'duration',true);color(q.background);
+  const q=p.sequence;number(q.width,256,3840,'width',true);number(q.height,256,3840,'height',true);if(q.width%2||q.height%2)error('Use even dimensions for H.264 output.');if(![24,25,30,60].includes(q.fps))error('Unsupported frame rate.');number(q.durationFrames,1,q.fps*3600,'duration',true);color(q.background);
   const ids=new Set();let count=0;
   for(const t of p.tracks){identifier(t.id);if(ids.has(t.id))error('Duplicate track ID.');ids.add(t.id);string(t.name,80,'track name');if(!trackKinds.includes(t.kind)||!Array.isArray(t.clips))error('Invalid track.');for(const key of ['visible','locked','muted','solo'])if(typeof t[key]!=='boolean')error('Invalid track state.');
     for(const c of t.clips){count++;identifier(c.id);if(ids.has(c.id))error('Duplicate clip ID.');ids.add(c.id);if(!['video','image','audio','text','captions','graphics'].includes(c.kind))error('Invalid clip kind.');string(c.name,200,'clip name');
@@ -36,7 +37,11 @@ export function validateProject(p) {
       const tr=c.transform;if(!tr)error('Missing transform.');for(const key of ['x','y'])number(tr[key],-8000,8000,key);for(const key of ['width','height'])number(tr[key],1,8000,key);number(tr.rotation,-3600,3600,'rotation');number(tr.opacity,0,1,'opacity');
       if(typeof c.text!=='string'||c.text.length>2000)error('Invalid text.');if(!c.textStyle)error('Missing text style.');number(c.textStyle.fontSize,8,600,'font size');number(c.textStyle.weight,100,900,'font weight',true);color(c.textStyle.color);color(c.textStyle.background);number(c.textStyle.backgroundOpacity,0,1,'background opacity');if(!['left','center','right'].includes(c.textStyle.align))error('Invalid text alignment.');
       if(!c.animation||!['none','fade','rise','zoom'].includes(c.animation.preset))error('Unsupported animation.');number(c.animation.inFrames,0,600,'entrance duration',true);number(c.animation.outFrames,0,600,'exit duration',true);
-      if(!c.audio||typeof c.audio.muted!=='boolean')error('Missing audio settings.');number(c.audio.volume,0,1,'volume');if(!['contain','cover'].includes(c.fit))error('Invalid media fit.');
+      if(!c.audio||typeof c.audio.muted!=='boolean')error('Missing audio settings.');number(c.audio.volume,0,1,'volume');for(const key of ['fadeInFrames','fadeOutFrames'])if(c.audio[key]!==undefined)number(c.audio[key],0,Math.min(300,c.durationFrames),'audio fade',true);if((c.audio.fadeInFrames||0)+(c.audio.fadeOutFrames||0)>c.durationFrames)error('Audio fades must fit inside the clip.');if(!['contain','cover'].includes(c.fit))error('Invalid media fit.');
+      if(c.caption){if(c.kind!=='captions'||!captionPresets.some(p=>p.id===c.caption.preset))error('Invalid caption preset.');color(c.caption.accent);if(!['estimated','transcribed','manual'].includes(c.caption.timing))error('Invalid caption timing.');}
+      if(c.design){if(!titlePresets.some(p=>p.id===c.design.preset))error('Invalid title preset.');color(c.design.accent);}
+      if(c.transition){if(!transitionPresets.some(p=>p.id===c.transition.preset))error('Invalid transition.');number(c.transition.inFrames,0,300,'transition entrance',true);number(c.transition.outFrames,0,300,'transition exit',true);}
+      if(c.words!==undefined){if(c.kind!=='captions'||!Array.isArray(c.words)||c.words.length>100)error('Invalid caption words.');let previous=-1;for(const word of c.words){string(word.text,200,'caption word');number(word.startFrame,0,c.durationFrames-1,'word start',true);number(word.endFrame,word.startFrame+1,c.durationFrames,'word end',true);if(word.startFrame<previous)error('Caption words must be in time order.');previous=word.startFrame;if(word.emphasis!==undefined&&typeof word.emphasis!=='boolean')error('Invalid word emphasis.');}}
       if(!Array.isArray(c.keyframes)||c.keyframes.length>100)error('Too many keyframes.');const keys=new Set();for(const k of c.keyframes){identifier(k.id);if(keys.has(k.id))error('Duplicate keyframe ID.');keys.add(k.id);if(!['x','y','width','height','rotation','opacity'].includes(k.property))error('Unsupported keyframe property.');number(k.frame,0,c.durationFrames-1,'keyframe',true);number(k.value,k.property==='opacity'?0:k.property==='width'||k.property==='height'?1:-8000,k.property==='opacity'?1:8000,'keyframe value');if(!['linear','easeOut','spring'].includes(k.easing))error('Invalid easing.');}
     }
   }
@@ -44,7 +49,7 @@ export function validateProject(p) {
 }
 function find(p,id){for(const track of p.tracks){const clip=track.clips.find(c=>c.id===id);if(clip)return {track,clip};}error('Clip not found.');}
 export function applyOperations(project,operations) {
-  if(!Array.isArray(operations)||!operations.length||operations.length>100)error('Use between 1 and 100 operations.');
+  if(!Array.isArray(operations)||!operations.length||operations.length>500)error('Use between 1 and 500 operations.');
   const p=structuredClone(project);
   for(const op of operations){if(!op||typeof op.type!=='string')error('Invalid operation.');
     if(op.type==='AddTrack'){if(!trackKinds.includes(op.kind))error('Invalid track kind.');p.tracks.push({id:op.id||uuid(),kind:op.kind,name:op.name||op.kind,visible:true,locked:false,muted:false,solo:false,clips:[]});continue;}
@@ -55,11 +60,24 @@ export function applyOperations(project,operations) {
     const {track,clip}=find(p,op.clipId);if(track.locked)error('Unlock this track first.');
     if(op.type==='RemoveClip'){track.clips=track.clips.filter(c=>c.id!==clip.id);}
     else if(op.type==='MoveClip'){const target=p.tracks.find(t=>t.id===(op.trackId||track.id));if(!target||target.locked)error('Destination track is locked or missing.');track.clips=track.clips.filter(c=>c.id!==clip.id);clip.startFrame=op.startFrame;target.clips.push(clip);}
-    else if(op.type==='TrimClip'){clip.startFrame=op.startFrame??clip.startFrame;clip.sourceInFrame=op.sourceInFrame??clip.sourceInFrame;clip.durationFrames=op.durationFrames;clip.keyframes=clip.keyframes.filter(k=>k.frame<clip.durationFrames);}
-    else if(op.type==='SplitClip'){number(op.frame,clip.startFrame+1,clip.startFrame+clip.durationFrames-1,'split frame',true);const left=op.frame-clip.startFrame;const right={...structuredClone(clip),id:op.newId||uuid(),startFrame:op.frame,durationFrames:clip.durationFrames-left,sourceInFrame:clip.sourceInFrame+left,keyframes:clip.keyframes.filter(k=>k.frame>=left).map(k=>({...k,id:uuid(),frame:k.frame-left}))};clip.durationFrames=left;clip.keyframes=clip.keyframes.filter(k=>k.frame<left);track.clips.push(right);}
+    else if(op.type==='TrimClip'){const shift=(op.sourceInFrame??clip.sourceInFrame)-clip.sourceInFrame;clip.startFrame=op.startFrame??clip.startFrame;clip.sourceInFrame=op.sourceInFrame??clip.sourceInFrame;clip.durationFrames=op.durationFrames;clip.keyframes=clip.keyframes.filter(k=>k.frame<clip.durationFrames);clip.audio.fadeInFrames=Math.min(clip.audio.fadeInFrames||0,Math.floor(clip.durationFrames/2));clip.audio.fadeOutFrames=Math.min(clip.audio.fadeOutFrames||0,clip.durationFrames-clip.audio.fadeInFrames);if(clip.words){clip.words=clip.words.filter(w=>w.endFrame>shift&&w.startFrame-shift<clip.durationFrames).map(w=>({...w,startFrame:Math.max(0,w.startFrame-shift),endFrame:Math.min(w.endFrame-shift,clip.durationFrames)}));clip.text=clip.words.map(w=>w.text).join(' ');}}
+    else if(op.type==='SplitClip'){number(op.frame,clip.startFrame+1,clip.startFrame+clip.durationFrames-1,'split frame',true);const left=op.frame-clip.startFrame;const right={...structuredClone(clip),id:op.newId||uuid(),startFrame:op.frame,durationFrames:clip.durationFrames-left,sourceInFrame:clip.sourceInFrame+left,keyframes:clip.keyframes.filter(k=>k.frame>=left).map(k=>({...k,id:uuid(),frame:k.frame-left}))};right.audio.fadeInFrames=0;clip.audio.fadeOutFrames=0;right.audio.fadeOutFrames=Math.min(right.audio.fadeOutFrames||0,right.durationFrames);clip.audio.fadeInFrames=Math.min(clip.audio.fadeInFrames||0,left);if(clip.words){right.words=clip.words.filter(w=>w.endFrame>left).map(w=>({...w,startFrame:Math.max(0,w.startFrame-left),endFrame:w.endFrame-left}));clip.words=clip.words.filter(w=>w.startFrame<left).map(w=>({...w,endFrame:Math.min(left,w.endFrame)}));clip.text=clip.words.map(w=>w.text).join(' ');right.text=right.words.map(w=>w.text).join(' ');}clip.durationFrames=left;clip.keyframes=clip.keyframes.filter(k=>k.frame<left);track.clips.push(right);}
     else if(op.type==='DuplicateClip'){const duplicate={...structuredClone(clip),id:op.newId||uuid(),startFrame:op.startFrame??clip.startFrame+clip.durationFrames};track.clips.push(duplicate);p.sequence.durationFrames=Math.max(p.sequence.durationFrames,duplicate.startFrame+duplicate.durationFrames);}
+    else if(op.type==='CrossfadeClip'){
+      if(!['video','image'].includes(clip.kind))error('Select a footage clip.');number(op.durationFrames,1,300,'crossfade duration',true);
+      const previous=track.clips.filter(c=>c.id!==clip.id&&['video','image'].includes(c.kind)&&c.startFrame<clip.startFrame).sort((a,b)=>b.startFrame-a.startFrame)[0];
+      if(!previous)error('There is no previous shot on this track.');const end=previous.startFrame+previous.durationFrames;
+      if(op.durationFrames>=Math.min(previous.durationFrames,clip.durationFrames))error('The overlap must be shorter than both shots.');
+      if(Math.abs(clip.startFrame-end)>op.durationFrames)error('Move this shot next to the previous shot before blending.');
+      const oldEnd=Math.max(...p.tracks.flatMap(t=>t.clips.map(c=>c.startFrame+c.durationFrames)));clip.startFrame=end-op.durationFrames;
+      clip.audio.fadeInFrames=op.durationFrames;previous.audio.fadeOutFrames=op.durationFrames;clip.transition={preset:'dissolve',inFrames:op.durationFrames,outFrames:0};previous.transition={preset:'none',inFrames:0,outFrames:0};
+      if(p.sequence.durationFrames===oldEnd)p.sequence.durationFrames=Math.max(...p.tracks.flatMap(t=>t.clips.map(c=>c.startFrame+c.durationFrames)));
+    }
     else if(op.type==='UpdateTransform'){for(const key of Object.keys(defaults))if(op.values?.[key]!==undefined)clip.transform[key]=op.values[key];}
-    else if(op.type==='UpdateText'){if(!['text','captions','graphics'].includes(clip.kind))error('Select a text layer.');if(op.text!==undefined)clip.text=op.text;if(op.style)clip.textStyle={...clip.textStyle,...op.style};}
+    else if(op.type==='UpdateText'){if(!['text','captions','graphics'].includes(clip.kind))error('Select a text layer.');if(op.text!==undefined){clip.text=op.text;if(clip.words){const values=typeof op.text==='string'?op.text.trim().split(/\s+/u):[];if(values.length===clip.words.length)clip.words=clip.words.map((w,i)=>({...w,text:values[i]}));else{clip.words=estimatedWords(op.text,clip.durationFrames);if(clip.caption)clip.caption.timing='estimated';}}}if(op.style)clip.textStyle={...clip.textStyle,...op.style};}
+    else if(op.type==='UpdateCaption'){if(clip.kind!=='captions')error('Select a caption.');clip.caption={...clip.caption,...op.values};if(op.words!==undefined){clip.words=structuredClone(op.words);clip.text=clip.words.map(w=>w.text).join(' ');}}
+    else if(op.type==='UpdateDesign'){if(!['text','graphics'].includes(clip.kind))error('Select a title.');clip.design={...clip.design,...op.values};}
+    else if(op.type==='UpdateTransition'){clip.transition={...clip.transition,...op.values};}
     else if(op.type==='UpdateAnimation'){clip.animation={...clip.animation,...op.values};}
     else if(op.type==='UpdateAudio'){clip.audio={...clip.audio,...op.values};}
     else if(op.type==='UpdateFit'){clip.fit=op.fit;}

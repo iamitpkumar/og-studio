@@ -12,6 +12,10 @@ Updated 1 October 2026. This is an engineering MVP, not a production-quality cer
 - Project-scoped stdio MCP server using the same repository and reducer. Structural/bulk/unselected edits require Director approval.
 - Existing `/create`, legacy database and earlier rendering code preserved. Git checkpoints record the audit and editor implementation.
 
+## Production update
+
+The Production panel now exposes timed transcription, generated short films and B-roll, with local key configuration and explicit opt-in. Imports default to full-duration timeline placement. Export previews show the actual MP4 and saved revision. Shared rendering adds word-level styles, title layouts, clip reveals and complementary audio fades. A photographic import/export acceptance replaces test patterns as the next technical rendering check; it does not certify creative quality. Details and limits are recorded in [production pipeline](PRODUCTION_PIPELINE.md).
+
 ## Evidence
 
 The synthetic acceptance project imported two actual videos, one image and one WAV. Its API test verifies source hashes, independent tracks, trim/split/rearrangement, animated title, SRT cues, undo/redo and reopening, Director approval, HTTP byte ranges, origin checks and asset isolation.
@@ -22,13 +26,21 @@ That render took about 103 seconds, with browser capture the largest cost. Hyper
 
 Real MCP client tests passed for handshake, tool discovery, selected edits, stale revisions, proposal approval, project/job scope and rejected code execution. The live MCP acceptance changed only the selected title at revision 13; export `17339917-3fee-4118-8c5a-1da04b718b6f` completed at 1920×1080, 30 fps, 300 frames and 10 seconds with audio. The contact sheet was retrieved through MCP and visually inspected; it shows the new title with the original footage, overlay and captions. This render took 66.7 seconds. All 25 automated tests pass; TypeScript and the final production build pass.
 
+## Photographic production acceptance
+
+Project `82c300a0-52ba-41b0-a25c-fb63a7a0759c`, revision 6, exported job `c4d16774-2dfa-4fdc-b189-c28d0672cc3d`: 1280×720, 30 fps, exactly 588 video frames and 19.6 seconds. The container is 19.606 seconds because of AAC padding. The downloaded output contains real photographic test footage, six burned-in caption treatments, kinetic/lower-third titles and a twelve-frame dissolve. FFmpeg fully decoded it; all thirteen sampled transition frames retained visible footage. Stereo analysis measured RMS 0.0697 and peak 0.8323. The contact sheet was inspected.
+
+Original media hashes, full twenty-second import, source split offsets, byte-range preview and actual attachment download were verified. This uses the public MDN flower sample and offline Windows test speech, with explicitly estimated caption cues. It is not a live AI-generated video or a creative-quality certification. Evidence is under ignored `data/test-runs/production-acceptance`. The optimized render took about two minutes for this twenty-second fixture; instant-production performance is not yet established.
+
+All 36 automated checks pass across the existing regressions and eleven production tests. TypeScript and the production build pass. Production tests include real extraction/media ingestion and controlled provider responses, not live paid generation.
+
 ## Outstanding gates
 
 1. Browser gesture, playback/scrubbing and layout acceptance: the computer-use runtime fails to start in this environment. API tests and compilation do not substitute for these checks. Inspect the desktop editor and narrow layouts when browser automation is restored.
 2. Live AI Director: no provider credentials or live generation test. It must be judged on real local brand projects before quality claims.
 3. Codex/Claude model-session compatibility: SDK client handshake/edit tests pass; installed vendor CLI syntax is verified, but actual model-driven sessions are unverified.
 4. Legacy “Open in editor” conversion remains planned. Existing projects remain available under `/create`; no automatic migration has rewritten them.
-5. Advanced captions, generated B-roll, beat analysis, transitions, sophisticated motion/reference intelligence, layered quality evaluation, Skills Workshop and governed brand-memory learning are later milestones.
+5. Six dynamic caption treatments, title designs, reveals, true adjacent-shot blending and durable provider-backed production are now implemented; see [production pipeline](PRODUCTION_PIPELINE.md). Live generation remains unverified without credentials. Beat analysis, subject segmentation, sophisticated motion/reference intelligence, layered quality evaluation, Skills Workshop and governed brand-memory learning remain later milestones.
 6. Browser/export pixel comparison, audio listening/sync assessment and the two-to-three-country creative benchmark have not been completed. Playback currently uses native media elements and frame-based transforms, not a guaranteed frame-locked professional audio engine.
 7. Commercial deployment, authentication, collaboration, subscriptions and metering remain gated on local acceptance. The app remains on loopback, not `editor.ogstart.com`.
 

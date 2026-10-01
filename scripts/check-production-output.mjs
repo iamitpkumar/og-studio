@@ -1,0 +1,19 @@
+// Checks an already completed proof export; does not queue another render.
+import assert from 'node:assert/strict';
+import {readFile,writeFile} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
+import {createHash} from 'node:crypto';
+import ffmpeg from 'ffmpeg-static';
+import ffprobe from 'ffprobe-static';
+import {runMedia} from '../apps/web/src/server/media.mjs';
+export async function verifyProductionOutput(evidence,dir,base){
+  const {jobId}=evidence,range=await fetch(`${base}/exports/${jobId}/preview`,{headers:{Range:'bytes=0-511'}});assert.equal(range.status,206);assert.equal((await range.arrayBuffer()).byteLength,512);assert.equal(range.headers.get('Content-Disposition'),null);
+  const download=await fetch(`${base}/exports/${jobId}`);assert.ok(download.ok);assert.match(download.headers.get('Content-Disposition'),/attachment/);const file=join(dir,'finished-photographic-proof.mp4'),bytes=new Uint8Array(await download.arrayBuffer());await writeFile(file,bytes);
+  const probe=JSON.parse(await runMedia(ffprobe.path,['-v','error','-show_streams','-show_format','-of','json',file]));const video=probe.streams.find(s=>s.codec_type==='video');assert.equal(video.width,1280);assert.equal(video.height,720);assert.equal(Number(video.nb_frames),588);assert.equal(video.avg_frame_rate,'30/1');assert.equal(Number(video.duration),19.6);assert.ok(Math.abs(Number(probe.format.duration)-19.6)<1/30,'AAC container padding must stay below one video frame');assert.ok(probe.streams.some(s=>s.codec_type==='audio'));await runMedia(ffmpeg,['-v','error','-i',file,'-f','null','-'],600000);
+  await runMedia(ffmpeg,['-y','-v','error','-i',file,'-vf','fps=1/3,scale=640:-2,tile=3x2','-frames:v','1',join(dir,'contact-sheet.jpg')]);
+  const pcmFile=join(dir,'decoded-audio.f32');await runMedia(ffmpeg,['-y','-v','error','-i',file,'-vn','-ac','2','-ar','48000','-f','f32le',pcmFile]);const pcm=await readFile(pcmFile);let sum=0,peak=0;for(let i=0;i<pcm.length;i+=4){const v=pcm.readFloatLE(i);sum+=v*v;peak=Math.max(peak,Math.abs(v));}evidence.audio={channels:2,rms:Math.sqrt(sum/(pcm.length/4)),peak};assert.ok(evidence.audio.rms>.005,'Exported audio must contain audible signal');assert.ok(evidence.audio.peak<1,'Mastered output must not clip');
+  const transitionFile=join(dir,'transition-frames.gray');await runMedia(ffmpeg,['-y','-v','error','-i',file,'-vf','select=between(n\\,288\\,300),scale=160:90','-fps_mode','passthrough','-pix_fmt','gray','-f','rawvideo',transitionFile]);const frames=await readFile(transitionFile),frameBytes=160*90,brightness=[];assert.equal(frames.length/frameBytes,13);for(let i=0;i<13;i++){let total=0;for(const v of frames.subarray(i*frameBytes,(i+1)*frameBytes))total+=v;brightness.push(total/frameBytes);}assert.ok(brightness.every(v=>v>50),'The dissolve must not reveal an empty canvas');
+  evidence.transitionBrightness=brightness;evidence.video={width:video.width,height:video.height,frames:Number(video.nb_frames),fps:30,duration:Number(video.duration),containerDuration:Number(probe.format.duration)};
+  evidence.checks=[...new Set([...evidence.checks,'actual downloaded MP4','HTTP byte-range player seeking','audible unclipped audio','exact video frame count and duration','complete decode','no blank frames during dissolve'])];evidence.output=file;evidence.videoBytes=bytes.length;evidence.videoHash=createHash('sha256').update(bytes).digest('hex');await writeFile(join(dir,'evidence.json'),JSON.stringify(evidence,null,2));console.log(JSON.stringify({output:file,video:evidence.video,audio:evidence.audio,jobId}));return evidence;
+}
+if(process.argv[1]&&resolve(process.argv[1])===resolve('scripts/check-production-output.mjs')){const dir=resolve('data/test-runs/production-acceptance');await verifyProductionOutput(JSON.parse(await readFile(join(dir,'evidence.json'),'utf8')),dir,'http://127.0.0.1:3100/api/editor');}

@@ -41,3 +41,7 @@ The database regression test requires the generated Prisma client; run `pnpm run
 With the app running, `node scripts/create-editor-fixtures.mjs`, then `node scripts/verify-editor.mjs`, then `node scripts/verify-editor-mcp.mjs` exercise real media ingestion and MCP editing. After the export completes, `node scripts/verify-editor-mcp-export.mjs` retrieves the real contact sheet through MCP and verifies output metadata. They create explicitly synthetic test projects and queue actual exports. These scripts do not validate browser drag gestures or subjective production quality.
 
 Read [SOL.md](SOL.md), the [architecture audit](docs/EDITOR_AUDIT_AND_MIGRATION.md), and [milestone status](docs/EDITOR_STATUS.md) before extending the system.
+
+### Production controls
+
+Open the editor’s **Production** tab to connect timed speech transcription, AI voice and Runway footage. Imports now default to full-source timeline placement; Titles and Captions provide original rendered treatments. Export shows the actual saved-revision MP4. Provider keys and opt-in are required for AI calls; local editing and export work without them. Read [production capabilities, evidence and current limits](docs/PRODUCTION_PIPELINE.md).

@@ -18,8 +18,8 @@ export async function readBody(request, limit) {
   return Buffer.concat(chunks);
 }
 
-export async function readJSON(request) {
-  const bytes = await readBody(request, 100000);
+export async function readJSON(request, limit = 100000) {
+  const bytes = await readBody(request, limit);
   let value;
   try { value = JSON.parse(bytes.toString('utf8')); } catch { fail('Send valid JSON.'); }
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('Send a JSON object.');

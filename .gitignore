@@ -25,3 +25,5 @@ data/editor-media/
 data/editor-exports/
 data/verification/
 .env.local
+
+.env.local.tmp

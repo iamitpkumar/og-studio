@@ -3,7 +3,7 @@ import {getProject,edit,addMessage,validateAssets,queueExport} from './editor-st
 import {fail,text} from './store.mjs';
 import {applyOperations,newClip} from '../../../../packages/timeline/src/editor.mjs';
 
-const directOperations=new Set(['UpdateText','UpdateTransform','UpdateAnimation','UpdateAudio','UpdateFit','AddKeyframe','RemoveKeyframe']);
+const directOperations=new Set(['UpdateText','UpdateTransform','UpdateAnimation','UpdateAudio','UpdateFit','UpdateCaption','UpdateDesign','UpdateTransition','AddKeyframe','RemoveKeyframe']);
 export function agentSnapshot(projectId){
   const s=getProject(projectId);
   return {project:s.project,revision:s.revision,selection:s.selection,canUndo:s.canUndo,canRedo:s.canRedo,
