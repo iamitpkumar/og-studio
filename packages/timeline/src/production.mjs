@@ -87,6 +87,7 @@ export function textAtFrame(clip,frame){
       if(preset==='hormozi'&&active){style.fontWeight=900;const value=spring((local-word.startFrame)/5);style.transform=`scale(${.94+.16*value})`;}
       if(preset==='neon'&&active){style.fontWeight=800;style.textShadow=`0 0 14px ${accent},0 0 28px ${accent}aa`;style.transform='scale(1.08)';}
       if(preset==='glow'&&active)style.textShadow=`0 0 14px ${accent},0 0 30px ${accent}99`;
+      if(preset==='karaoke'&&active){style.fontWeight=800;style.color=accent;style.textShadow=`0 0 12px ${accent}cc`;style.transform='scale(1.06)';}
       if(preset==='typewriter'){style.opacity=local>=word.startFrame?1:0;style.color=active?accent:clip.textStyle.color;}
       if(preset==='signal'&&!active&&!spoken)style.opacity=.8;
       if(preset==='minimal'&&!active&&!spoken)style.opacity=.65;
