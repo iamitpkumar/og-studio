@@ -4,7 +4,7 @@ export const titlePresets:{id:string;name:string;text:string;description:string}
 export const transitionPresets:{id:string;name:string}[];
 export function estimatedWords(text:string,durationFrames:number):NonNullable<Clip['words']>;
 export function captionSettings(preset?:string,accent?:string):NonNullable<Clip['caption']>;
-export function captionLayout(sequence:EditorProject['sequence']):Clip['transform'];
+export function captionLayout(sequence:EditorProject['sequence'],preset?:string):Clip['transform'];
 export function titleLayout(preset:string,sequence:EditorProject['sequence']):Clip['transform'];
 export function transitionAtFrame(clip:Clip,frame:number):{opacity:number;offsetX:number;clipPath:string};
 export function textBoxStyle(clip:Clip):Record<string,unknown>;

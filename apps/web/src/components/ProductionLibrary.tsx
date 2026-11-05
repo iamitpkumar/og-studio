@@ -43,7 +43,8 @@ export function CaptionLibrary({
       <div className="caption-preset-grid">
         {captionPresets.map(p => {
           const isMarker = ['marker', 'vox'].includes(p.id);
-          const isUpper = p.id === 'hormozi';
+          const isUpper = ['hormozi', 'behind-subject'].includes(p.id);
+          const isBehind = p.id === 'behind-subject';
           return (
             <button
               key={p.id}
@@ -51,19 +52,19 @@ export function CaptionLibrary({
               onClick={() => setPreset(p.id)}
             >
               <span>
-                {isUpper ? 'MAKE ' : 'Make '}
+                {isBehind ? (isUpper ? 'BEHIND ' : 'Behind ') : (isUpper ? 'MAKE ' : 'Make ')}
                 <b
                   style={{
                     color: isMarker ? '#10221d' : p.accent,
                     background: isMarker ? p.accent : undefined,
                   }}
                 >
-                  {isUpper ? 'EVERY' : 'every'}
+                  {isBehind ? (isUpper ? 'SUBJECT' : 'subject') : (isUpper ? 'EVERY' : 'every')}
                 </b>
-                {isUpper ? ' WORD COUNT.' : ' word count.'}
+                {isBehind ? (isUpper ? ' DEPTH.' : ' depth.') : (isUpper ? ' WORD COUNT.' : ' word count.')}
               </span>
               <strong>
-                <span>{p.name}</span>
+                <span>{p.name}{isBehind ? ' · Depth' : ''}</span>
                 <span
                   title={`Add ${p.name} caption`}
                   onClick={e => {

@@ -15,24 +15,38 @@ import {
 import { compileTimeline } from '../apps/web/src/server/editor-renderer.mjs';
 import { calculateSpeechSegments } from '../scripts/tighten-silences.mjs';
 
-test('social caption presets include viral styles: Hormozi, Vox, Neon Pop, Minimal, Karaoke', () => {
+test('social caption presets include viral styles: Hormozi, Vox, Neon Pop, Minimal, Karaoke, Liquid Glass, Behind Subject', () => {
   const ids = captionPresets.map(p => p.id);
   assert.ok(ids.includes('hormozi'), 'hormozi preset missing');
   assert.ok(ids.includes('vox'), 'vox preset missing');
   assert.ok(ids.includes('neon'), 'neon preset missing');
   assert.ok(ids.includes('minimal'), 'minimal preset missing');
   assert.ok(ids.includes('karaoke'), 'karaoke preset missing');
+  assert.ok(ids.includes('liquid-glass'), 'liquid-glass preset missing');
+  assert.ok(ids.includes('behind-subject'), 'behind-subject preset missing');
+  assert.ok(ids.includes('glass-card'), 'glass-card preset missing');
+  assert.ok(ids.includes('cyber-neon'), 'cyber-neon preset missing');
 
   const hormozi = captionPresets.find(p => p.id === 'hormozi');
   assert.equal(hormozi.accent, '#ffd700');
+
+  const liquid = captionPresets.find(p => p.id === 'liquid-glass');
+  assert.equal(liquid.accent, '#64f4d2');
+
+  const behind = captionPresets.find(p => p.id === 'behind-subject');
+  assert.equal(behind.accent, '#ffd700');
 });
 
-test('social motion graphics presets include Hook Badge, Top Banner, Progress Bar, Callout', () => {
+test('social motion graphics presets include Hook Badge, Top Banner, Progress Bar, Callout, Liquid Glass, Frost HUD, Prismatic, Behind Title', () => {
   const ids = titlePresets.map(p => p.id);
   assert.ok(ids.includes('hook-badge'), 'hook-badge preset missing');
   assert.ok(ids.includes('top-banner'), 'top-banner preset missing');
   assert.ok(ids.includes('progress-bar'), 'progress-bar preset missing');
   assert.ok(ids.includes('callout'), 'callout preset missing');
+  assert.ok(ids.includes('liquid-glass'), 'liquid-glass title preset missing');
+  assert.ok(ids.includes('frost-hud'), 'frost-hud title preset missing');
+  assert.ok(ids.includes('prismatic-glass'), 'prismatic-glass title preset missing');
+  assert.ok(ids.includes('behind-title'), 'behind-title preset missing');
 
   const p = emptyProject();
   const badgeLayout = titleLayout('hook-badge', p.sequence);
@@ -42,6 +56,54 @@ test('social motion graphics presets include Hook Badge, Top Banner, Progress Ba
   const bannerLayout = titleLayout('top-banner', p.sequence);
   assert.equal(bannerLayout.y, 0);
   assert.equal(bannerLayout.x, 0);
+
+  const liquidLayout = titleLayout('liquid-glass', p.sequence);
+  assert.ok(liquidLayout.width > 500);
+  assert.ok(liquidLayout.y > 0);
+
+  const behindLayout = titleLayout('behind-title', p.sequence);
+  assert.ok(behindLayout.width >= 900);
+});
+
+test('liquid-glass caption renders frosted glassmorphism and specular glow', () => {
+  const p = emptyProject();
+  const c = newClip(p, 'captions');
+  c.durationFrames = 60;
+  c.text = 'Liquid Glass Reality';
+  c.caption = { ...captionSettings('liquid-glass'), timing: 'transcribed' };
+  c.words = [
+    { text: 'Liquid', startFrame: 0, endFrame: 20 },
+    { text: 'Glass', startFrame: 20, endFrame: 40 },
+    { text: 'Reality', startFrame: 40, endFrame: 60 }
+  ];
+
+  const style = textBoxStyle(c);
+  assert.ok(String(style.backdropFilter).includes('blur(24px)'));
+  assert.ok(String(style.boxShadow).includes('inset'));
+  assert.equal(style.borderRadius, '36px');
+
+  // Seek to frame 25
+  const words = textAtFrame(c, 25);
+  assert.ok(words);
+  assert.equal(words[1].active, true);
+  assert.equal(words[1].style.color, '#64f4d2');
+});
+
+test('behind-subject caption renders cinematic depth positioning and 3D shadow', () => {
+  const p = emptyProject();
+  const c = newClip(p, 'captions');
+  c.durationFrames = 60;
+  c.text = 'Depth Perception';
+  c.caption = { ...captionSettings('behind-subject'), timing: 'transcribed' };
+  c.transform = captionLayout(p.sequence, 'behind-subject');
+
+  const style = textBoxStyle(c);
+  assert.equal(style.fontWeight, 900);
+  assert.equal(style.textTransform, 'uppercase');
+  assert.ok(String(style.textShadow).includes('rgba(0,0,0,0.95)'));
+  // Behind subject is placed higher (around chest/head level)
+  assert.ok(c.transform.y < p.sequence.height * 0.5);
+  assert.ok(c.transform.width >= p.sequence.width * 0.9);
 });
 
 test('hormozi caption renders bold uppercase with active scale bounce', () => {
