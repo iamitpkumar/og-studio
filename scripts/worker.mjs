@@ -52,5 +52,5 @@ async function execute(job) {
 }
 function run(command,args,signal,cwd){return new Promise((resolve,reject)=>{const child=spawn(command,args,{cwd,windowsHide:true,signal,env:{...process.env,PATH:[dirname(ffmpeg),dirname(ffprobe.path),process.env.PATH].join(delimiter),HYPERFRAMES_EXTRACT_CACHE_DIR:join(dataDir,'frame-cache'),HYPERFRAMES_TELEMETRY_DISABLED:'1'}});let output='',errors='';const timer=setTimeout(()=>child.kill(),20*60*1000);child.stdout.on('data',d=>{output=(output+d).slice(-200000);});child.stderr.on('data',d=>{errors=(errors+d).slice(-3000);});child.on('error',error=>{clearTimeout(timer);reject(error);});child.on('close',code=>{clearTimeout(timer);code===0?resolve(output):reject(new Error(`Media check or render failed (${code}). ${(errors||output).slice(-500)}`));});});}
 runtimeHeartbeat();setInterval(runtimeHeartbeat,5000);let productionTask=null;
-console.log('Motion OS worker started. Local jobs only; Ctrl+C to stop.');
+console.log('OG Studio worker started. Local jobs only; Ctrl+C to stop.');
 while(true){if(!productionTask)productionTask=workProductionJob().catch(e=>console.error('Production worker:',e.message)).finally(()=>{productionTask=null;});const job=claimJob();if(job)await execute(job);else if(!await workEditorJob())await new Promise(r=>setTimeout(r,750));}

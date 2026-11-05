@@ -1,4 +1,4 @@
-# Motion OS — local editor
+# OG Studio — local video editor
 
 A local Windows video workspace at `http://127.0.0.1:3100`. The main route is the editor; the earlier product-to-video creator remains at `/create`. Future production address: `editor.ogstart.com`. Nothing is deployed there by this implementation.
 

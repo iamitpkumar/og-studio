@@ -21,7 +21,7 @@ test('real stdio MCP handshake, selected editing, stale rejection, proposal appr
   const transport=new StdioClientTransport({command:process.execPath,args:[resolve('scripts/editor-mcp.mjs'),'--project',state.project.id],env:{...process.env,MOTION_DATA_DIR:process.env.MOTION_DATA_DIR},stderr:'pipe'});
   try{
     await client.connect(transport);
-    assert.equal(client.getServerVersion().name,'motion-os');
+    assert.equal(client.getServerVersion().name,'og-studio');
     const catalog=await client.listTools();assert.equal(catalog.tools.length,10);
     assert.ok(!catalog.tools.some(t=>/approve|shell|execute|read_file/.test(t.name)));
     const call=async(name,args={})=>{const result=await client.callTool({name,arguments:args});assert.ok(!result.isError,result.content[0].text);return JSON.parse(result.content[0].text);};
