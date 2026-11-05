@@ -10,7 +10,7 @@ process.chdir(resolve(dirname(fileURLToPath(import.meta.url)),'..'));
 const args=process.argv.slice(2);
 const projectId=args[0]==='--project'&&args.length===2?args[1]:null;
 if(!projectId||!/^[-\w]{1,80}$/.test(projectId)){console.error('Usage: node scripts/editor-mcp.mjs --project <existing-project-id>');process.exit(1);}
-const {agentSnapshot,agentEdit,agentAddClip,agentExport}=await import('../apps/web/src/server/editor-agent.mjs');
+const {agentSnapshot,agentEdit,agentAddClip,agentExport,agentSocialCaptions,agentMotionGraphic,agentTightenSilences}=await import('../apps/web/src/server/editor-agent.mjs');
 const {dataDir}=await import('../apps/web/src/server/store.mjs');
 agentSnapshot(projectId); // Refuse an unknown project at startup.
 
@@ -20,7 +20,10 @@ const tools=[
   tool('inspect_project','Read the connected project, exact revision, saved selection, timeline tracks, media, history and exports. All times are integer sequence frames.'),
   tool('search_media','Search attached media by name, folder or tag. No filesystem access or remote fetching.',{query:string}),
   tool('edit_timeline','Apply at most five property changes to currently selected clips. Other edits become Director proposals requiring human approval. Inspect first; use expectedRevision and a unique requestKey. Operations: UpdateText {clipId,text,style?}; UpdateTransform {clipId,values:{x,y,width,height,rotation,opacity}}; UpdateAnimation {clipId,values:{preset:none|fade|rise|zoom,inFrames,outFrames}}; UpdateAudio {clipId,values:{volume:0..1,muted}}; UpdateFit {clipId,fit:contain|cover}; AddKeyframe {clipId,keyframe:{property,frame,value,easing:linear|easeOut|spring}}; RemoveKeyframe {clipId,keyframeId}; MoveClip {clipId,startFrame,trackId?}; TrimClip {clipId,durationFrames,startFrame?,sourceInFrame?}; SplitClip {clipId,frame}; RemoveClip {clipId}. No code, paths or URLs.',{expectedRevision:revision,requestKey:string,label:string,operations:{type:'array',minItems:1,maxItems:100,items:{type:'object'}},proposeOnly:{type:'boolean'}},['expectedRevision','requestKey','label','operations'],false),
-  tool('propose_clip','Propose a new title, caption or attached media clip on an unlocked track. Review in Director before insertion.',{expectedRevision:revision,requestKey:string,label:string,trackId:string,kind:{type:'string',enum:['text','captions','video','image','audio']},assetId:string,text:string,startFrame:{type:'integer',minimum:0},durationFrames:{type:'integer',minimum:1}},['expectedRevision','requestKey','label','trackId','kind'],false),
+  tool('propose_clip','Propose a new title, caption or attached media clip on an unlocked track. Review in Director before insertion.',{expectedRevision:revision,requestKey:string,label:string,trackId:string,kind:{type:'string',enum:['text','captions','video','image','audio','graphics']},assetId:string,text:string,startFrame:{type:'integer',minimum:0},durationFrames:{type:'integer',minimum:1},preset:string,accent:string},['expectedRevision','requestKey','label','trackId','kind'],false),
+  tool('generate_social_captions','Propose styled social media captions (Hormozi Gold, Vox Marker, Neon Pop, Minimal Luxury, Karaoke Wave). Review in Director before insertion.',{expectedRevision:revision,requestKey:string,label:string,trackId:string,text:string,preset:{type:'string',enum:['hormozi','vox','neon','minimal','karaoke','signal','punch','marker','glow','editorial','typewriter']},startFrame:{type:'integer',minimum:0},durationFrames:{type:'integer',minimum:1},accent:string},['expectedRevision','requestKey','label','trackId','text'],false),
+  tool('add_motion_graphic','Propose a social motion graphic overlay (Hook Badge, Top Banner, Progress Bar, Data Callout, Lower Third). Review in Director before insertion.',{expectedRevision:revision,requestKey:string,label:string,trackId:string,template:{type:'string',enum:['hook-badge','top-banner','progress-bar','callout','lower-third','hero','chapter','glass','kinetic','stat']},text:string,startFrame:{type:'integer',minimum:0},durationFrames:{type:'integer',minimum:1},accent:string},['expectedRevision','requestKey','label','trackId','template'],false),
+  tool('tighten_silences','Propose non-destructive silence tightening and audio crossfades on a speech/footage clip to eliminate dead air and audio clicks.',{expectedRevision:revision,requestKey:string,label:string,clipId:string,silenceCuts:{type:'array',items:{type:'integer',minimum:0}}},['expectedRevision','requestKey','label','clipId'],false),
   tool('render_preview','Queue a real MP4 and contact sheet from an immutable saved revision and original media. Does not edit the timeline.',{expectedRevision:revision},['expectedRevision'],false),
   tool('export_status','Inspect an export belonging to this project. Completed jobs include local browser links.',{jobId:string},['jobId']),
   tool('inspect_export_frames','Return the actual rendered contact sheet for a completed export belonging to this project.',{jobId:string},['jobId'])
@@ -42,6 +45,9 @@ server.setRequestHandler(CallToolRequestSchema,async request=>{
     else if(name==='search_media'){const query=(input.query||'').toLowerCase();result=agentSnapshot(projectId).media.filter(a=>`${a.name} ${a.folder} ${(a.tags||[]).join(' ')}`.toLowerCase().includes(query));}
     else if(name==='edit_timeline')result=agentEdit(projectId,input);
     else if(name==='propose_clip')result=agentAddClip(projectId,input);
+    else if(name==='generate_social_captions')result=agentSocialCaptions(projectId,input);
+    else if(name==='add_motion_graphic')result=agentMotionGraphic(projectId,input);
+    else if(name==='tighten_silences')result=agentTightenSilences(projectId,input);
     else if(name==='render_preview')result=agentExport(projectId,input.expectedRevision);
     else{
       const job=agentSnapshot(projectId).jobs.find(j=>j.id===input.jobId);if(!job)throw new Error('Export does not belong to this project.');

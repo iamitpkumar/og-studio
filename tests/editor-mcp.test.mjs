@@ -22,7 +22,7 @@ test('real stdio MCP handshake, selected editing, stale rejection, proposal appr
   try{
     await client.connect(transport);
     assert.equal(client.getServerVersion().name,'motion-os');
-    const catalog=await client.listTools();assert.equal(catalog.tools.length,7);
+    const catalog=await client.listTools();assert.equal(catalog.tools.length,10);
     assert.ok(!catalog.tools.some(t=>/approve|shell|execute|read_file/.test(t.name)));
     const call=async(name,args={})=>{const result=await client.callTool({name,arguments:args});assert.ok(!result.isError,result.content[0].text);return JSON.parse(result.content[0].text);};
     const initial=await call('inspect_project');assert.equal(initial.project.id,state.project.id);assert.equal(initial.revision,state.revision);
@@ -30,6 +30,15 @@ test('real stdio MCP handshake, selected editing, stale rejection, proposal appr
     assert.equal(result.status,'applied');assert.equal(result.revision,state.revision+1);
     const saved=store.getProject(state.project.id);assert.equal(saved.project.tracks[2].clips[1].text,manual.text);assert.equal(saved.history[0].actor,'mcp');
     const stale=await client.callTool({name:'edit_timeline',arguments:{expectedRevision:state.revision,requestKey:'stale',label:'Stale request',operations:[{type:'UpdateText',clipId:selected.id,text:'Wrong'}]}});assert.equal(stale.isError,true);
+
+    // Test social captions proposal
+    const captionProposal=await call('generate_social_captions',{expectedRevision:saved.revision,requestKey:'social-caps',label:'Add Hormozi captions',trackId:state.project.tracks[3].id,text:'Viral videos stop scrolling',preset:'hormozi'});
+    assert.equal(captionProposal.status,'approval_required');
+
+    // Test motion graphic proposal
+    const motionProposal=await call('add_motion_graphic',{expectedRevision:saved.revision,requestKey:'motion-badge',label:'Add Hook Badge',trackId:state.project.tracks[2].id,template:'hook-badge',text:'STOP SCROLLING'});
+    assert.equal(motionProposal.status,'approval_required');
+
     const proposal=await call('edit_timeline',{expectedRevision:saved.revision,requestKey:'unselected-edit',label:'Propose unselected edit',operations:[{type:'UpdateText',clipId:manual.id,text:'Approved later'}]});
     assert.equal(proposal.status,'approval_required');assert.equal(store.getProject(state.project.id).revision,saved.revision);
     // Simulate the explicit human approval endpoint, which is deliberately absent from MCP.

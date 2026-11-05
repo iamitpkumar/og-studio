@@ -9,6 +9,7 @@ import { serializeSubtitles } from '../../../../../../../packages/timeline/src/e
 import {productionAvailability,saveProductionConfig} from '../../../../server/production-config.mjs';
 import {productionJobs,queueProduction,cancelProduction,workerStatus} from '../../../../server/production-store.mjs';
 import { propose,approve } from '../../../../server/editor-director.mjs';
+import { compileTimeline } from '../../../../server/editor-renderer.mjs';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 type Context={params:Promise<{path:string[]}>};
 const json=(body:unknown,status=200)=>Response.json(body,{status,headers:{'Cache-Control':'no-store'}});
@@ -22,6 +23,15 @@ async function handler(req:NextRequest,context:Context){try{
       if(action==='media'&&assetId){const asset=p.media.find((a:any)=>a.id===assetId);if(!asset)fail('Media not found in this project.',404);const thumbnail=req.nextUrl.searchParams.has('thumbnail');return fileResponse(join(mediaRoot,thumbnail?asset.thumbnail:asset.proxy),thumbnail?'image/jpeg':asset.mime,req);}
       if(action==='json')return new Response(JSON.stringify(p.project,null,2),{headers:{'Content-Type':'application/json','Content-Disposition':'attachment; filename="motion-timeline.json"'}});
       if(action==='subtitles')return new Response(serializeSubtitles(p.project),{headers:{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':'attachment; filename="captions.srt"'}});
+      if(action==='preview-html'){
+        const html=compileTimeline(p.project,p.media,{
+          isLivePreview:true,
+          gsapUrl:'/gsap.min.js',
+          fontUrl:'/fonts/manrope-latin.woff2',
+          assetUrl:(asset:any)=>`/api/editor/projects/${key}/media/${asset.id}`
+        });
+        return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
+      }
       if(action==='production')return json(productionJobs(key));
       if(!action)return json({...p,productions:productionJobs(key),worker:workerStatus()});
     }
